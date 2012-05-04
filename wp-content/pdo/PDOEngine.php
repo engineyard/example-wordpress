@@ -79,14 +79,14 @@ class PDO_Engine{
 				}
 				if (!is_writable (FQDBDIR)){
 					umask($u);
-					$wpdb->bail('<h1>Permissions Problem</h1><p>PDO For WordPress needs to be able to write to the folder ' .FQDBDIR ."</p>");
+					//$wpdb->bail('<h1>Permissions Problem</h1><p>PDO For WordPress needs to be able to write to the folder ' .FQDBDIR ."</p>");
 				}
 
 				if (!is_file(FQDBDIR.'/.htaccess')){
 					$fh = fopen(FQDBDIR.'/.htaccess', "w");
 					if (!$fh) {
 						umask($u);
-						$wpdb->bail("<h1>Cannot create htaccess file</h1><p>The installation routine cannot create the htaccess file needed to protect your database</p>");
+						//$wpdb->bail("<h1>Cannot create htaccess file</h1><p>The installation routine cannot create the htaccess file needed to protect your database</p>");
 					}
 					fwrite ($fh, "DENY FROM ALL");
 					fclose ($fh);
