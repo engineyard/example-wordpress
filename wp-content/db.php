@@ -13,13 +13,13 @@ Description: This 'plugin' enables WP to use databases supported by PHP's PDO ab
  * @version $Id$
  * @author	Justin Adie, rathercurious.net
  */
- 
+
 /**
  *	db.php in this location, prevents wp-db.php from being loaded.  I use it to perform the "Pre-Flight Checks"
- * 
- *	this file provides some pre-validation function to ensure that 
+ *
+ *	this file provides some pre-validation function to ensure that
  *	the user is using a version of php that is compatible with the
- *	pdo abstraction layers and has the right database extensions 
+ *	pdo abstraction layers and has the right database extensions
  *	available to him
  *	this file also has some helper functions for versions of wordpress < 2.4
  *	that dummy a call to mysql_server_info in the installation and upgrade processes
@@ -86,13 +86,13 @@ function fileModified($file){
 
 /**
 *	writes the new file modification timestamp to the management table
-*	@param	$file	string	a string holding the full path to the file in question	
+*	@param	$file	string	a string holding the full path to the file in question
 */
 function updateFileModified($file){
 	global $wpdb;
-	$wpdb->query("	replace into 
-					modTimes 
-					(modTime, modFile) 
+	$wpdb->query("	replace into
+					modTimes
+					(modTime, modFile)
 					values ('".$wpdb->escape(getModTime($file))."',
 							'".$wpdb->escape($file)."')");
 }
@@ -112,7 +112,7 @@ function getModTime($file){
 *	Intended that this function is extended as new wordpress versions are issued
 */
 function changeFiles_2_4(){
-	$files = array (	ABSPATH.'/wp-admin/includes/upgrade.php', 
+	$files = array (	ABSPATH.'/wp-admin/includes/upgrade.php',
 						ABSPATH.'/wp-admin/includes/schema.php');
 	foreach ($files as $file){
 		if (fileModified($file)){
@@ -138,7 +138,7 @@ if (defined('WP_CONTENT_DIR')){
 	define ("PDODIR", ABSPATH.'/wp-content/pdo/');
 	define ('FQDBDIR', ABSPATH .'/wp-content/database/');
 }
-define ('FQDB', FQDBDIR .'MyBlog.sqlite');
+define ('FQDB', FQDBDIR .'wpress.sqlite');
 
 //we need to call this now, to instantiate the $wpdb object
 //before we do the file rewrites.
@@ -147,11 +147,11 @@ require_once PDODIR.'db.php';
 //check to see whether we need to make some file changes
 if(DB_TYPE !== 'mysql'){
 	//to get $wp_version into the global scope
-	include_once ABSPATH.'/wp-includes/version.php';
+	include ABSPATH.'wp-includes/version.php';
 	preg_match('/^\\s*[\d.]*/',$wp_version, $matches);
 	$v = trim($matches[0]);
 	if (version_compare($v, "2.4") == -1){
-		changeFiles_2_4();
+		//changeFiles_2_4();
 	}
 }
 

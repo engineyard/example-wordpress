@@ -4,9 +4,9 @@
  * @version $Id$
  * @author	Justin Adie, rathercurious.net
  */
- 
+
 /**
- *	provides a 'driver' for  wordpress to use PDO databases 
+ *	provides a 'driver' for  wordpress to use PDO databases
  *
  *	The core behaviours of this class is <ul>
  *	<li> 	to create an appropriate factory item for query rewriting
@@ -19,7 +19,7 @@ class PDO_Engine{
 	//public properties
 	public	$isError = false;
 	public 	$foundRowsResult;
-	
+
 	//private properties
 	private $initialQuery;
 	private $rewrittenQuery;
@@ -41,15 +41,15 @@ class PDO_Engine{
 	private $returnValue;
 	private $startTime;
 	private $stopTime;
-	
+
 	/**
-	 *	object instantiation.  
+	 *	object instantiation.
 	 *
 	 *	At this point it's just a connection object...
 	 *
 	 *	@param array $connectionParams	a simple array of connection parameters (see list command for order
 	 */
-			
+
 	public function __construct($connectionParams){
 		$this->connect($connectionParams);
 	}
@@ -71,9 +71,9 @@ class PDO_Engine{
 				//	determines whether we are in the installation process.  If so, we
 				//	create the holding directory, protect it from direct access and create the database
 				if (!is_dir(FQDBDIR)){
-				
+
 					if (!@mkdir(FQDBDIR, 0777, true)){
-						umask($u);					
+						umask($u);
 						$wpdb->bail("<h1>Cannot create folder</h1><p>The installation routine cannot create the folder in which the sqlite database will be stored.  This will usually be because of permissions errors.</p>");
 					}
 				}
@@ -81,7 +81,7 @@ class PDO_Engine{
 					umask($u);
 					$wpdb->bail('<h1>Permissions Problem</h1><p>PDO For WordPress needs to be able to write to the folder ' .FQDBDIR ."</p>");
 				}
-				
+
 				if (!is_file(FQDBDIR.'/.htaccess')){
 					$fh = fopen(FQDBDIR.'/.htaccess', "w");
 					if (!$fh) {
@@ -90,10 +90,10 @@ class PDO_Engine{
 					}
 					fwrite ($fh, "DENY FROM ALL");
 					fclose ($fh);
-				}	
+				}
 				//reset the umask to what it was.
-				umask($u); 
-							
+				umask($u);
+
 				$dsn = "sqlite:".FQDB;
 				if (is_file(FQDB)){
 					$this->pdo = new PDO($dsn);
@@ -107,15 +107,15 @@ class PDO_Engine{
 					//install the UDFs
 					require_once PDODIR . '/driver_sqlite/pdo_sqlite_udfs.php';
 					new PDO_SQLITE_UDFS($this->pdo);
-					
+
 				} else {
 					$this->pdo = new PDO($dsn);
 					//if the database did not exist, we need to step in
 					//quickly and create the tables to stop wordpress from trying to do it
 					$this->installDB();
 				}
-				
-				
+
+
 			break;
 			case 'mysql':
 				$dsn = "mysql:dbname={$dbName};host={$dbHost}";
@@ -133,13 +133,13 @@ class PDO_Engine{
 HTML;
 				$this->setError(__LINE__, __FUNCTION__ , $message);
 		}//end switch
-		
+
 		if ($this->pdo === false){
 			$message = "<h1>Database Error</h1><p>We have been unable to connect to the specified database.<br/>The error message received was " . print_r($this->pdo->errorInfo(), true) .'</p>';
 			$this->setError(__LINE__, __FUNCTION__, $message);
 		}
 	}
-	
+
 	/**
 	 *	interrupts the usual wordpress table creation regime
 	 *
@@ -151,7 +151,7 @@ HTML;
 			case "sqlite":
 				require_once PDODIR.'/wp_install.php';
 				break;
-			
+
 		}
 	}
 
@@ -167,19 +167,19 @@ HTML;
 	 *	@param	$query	string	the query that is to be processed.
 	 */
 	public function query($query){
-		
-		//design decision to keep this as one object serving muliple queries rather than a new object per query. 
+
+		//design decision to keep this as one object serving muliple queries rather than a new object per query.
 		$this->flush();
-		
+
 		//I store details of the query at each stage of use for ease of debugging
 		$this->queries[] = "Raw query:\t$query";
-		
+
 		//currently I don't use initialquery again, but keeping just in case.
 		$this->initialQuery = $query;
 		$this->determineQueryType($query);
 		switch (strtolower($this->queryType)){
 			case 'foundrows':
-				//for a found rows query we really don't need to do anything other than point the query back at 
+				//for a found rows query we really don't need to do anything other than point the query back at
 				//the results stored in this object by the last query.
 				$this->results = $this->foundRowsResult;
 				$this->foundRowsResult = null;
@@ -189,7 +189,7 @@ HTML;
 					case "sqlite":
 						list($insertSQLPrefix, $values, $count) = $this->multiInsertMatches;
 						$this->multiInsertMatches = array();
-					
+
 						if ($count > 1){
 							$cnt = 1;
 							$first = true;
@@ -228,12 +228,12 @@ HTML;
 							}
 						}
 					break;
-						
+
 					case "mysql":
 						$this->rewrittenQuery = $this->initialQuery;
 						$this->needsPostProcessing = false;
 					break;
-					
+
 				}
 			break;
 
@@ -241,7 +241,7 @@ HTML;
 				switch ($this->dbType){
 					case "sqlite":
 						require_once PDODIR."/driver_sqlite/pdo_sqlite_driver.php";
-						
+
 						$this->rewriteEngine = new pdo_sqlite_driver();
 						$this->rewrittenQuery = $this->rewriteEngine->rewriteQuery($this->initialQuery, $this->queryType);
 						$this->needsPostProcessing = true;
@@ -255,7 +255,7 @@ HTML;
 				$this->queries[]="Rewritten: $this->rewrittenQuery";
 				// prepare the query to use placeholders (avoids sql injection attacks)
 				$this->extractVariables();
-				
+
 				//prepare the query
 				//and execute it (called from prepare())
 				$this->prepareQuery();
@@ -266,20 +266,20 @@ HTML;
 					$this->convertToObject();
 				} else {
 					/*
-					 * 
+					 *
 					 global $wpdb;
 					$wpdb->bail($this->getErrorMessage());
 					*/
 				}
 			break;
-			
+
 		}
 		//dump some queries to a text file for testing
 		if (defined('PDO_DEBUG') && PDO_DEBUG === true){
-			file_put_contents(ABSPATH.'wp-content/database/debug.txt', $this->getDebugInfo(), FILE_APPEND);	
-		}	
-	}	
-	
+			file_put_contents(ABSPATH.'wp-content/database/debug.txt', $this->getDebugInfo(), FILE_APPEND);
+		}
+	}
+
 	/**
 	 *	returns the actual result set, as cleansed by processResults
 	 *
@@ -295,7 +295,7 @@ HTML;
 	public function getAffectedRows(){
 		return $this->affectedRows;
 	}
-	
+
 	/**
 	 *	returns the actual result set, as cleansed by processResults
 	 *
@@ -303,7 +303,7 @@ HTML;
 	public function getColumns(){
 		return $this->columnNames;
 	}
-	
+
 	/**
 	 *	returns the actual result set, as cleansed
 	 *
@@ -311,7 +311,7 @@ HTML;
 	public function getQueryResults(){
 		return $this->results;
 	}
-	
+
 	/**
 	 *	returns the number of rows returned by the previous query
 	 *
@@ -319,15 +319,15 @@ HTML;
 	public function getNumRows(){
 		return $this->numRows;
 	}
-	
+
 	/**
 	 *	returns a value to be used by WordPress as a result
-	 *		
+	 *
 	 */
 	public function getReturnValue(){
 		return $this->returnValue;
 	}
-	
+
 	/**
 	 *	method to return the current array of error messages in a string form
 	 *
@@ -351,18 +351,18 @@ HTML;
 		foreach ($this->errorMessages as $num=>$m){
 			$output .= "<div style=\"clear:both; margin_bottom:2px; border: red dotted thin;\" class=\"errorMessage\" style=\"border-bottom:dotted blue thin;\">Error occurred at line {$this->errors[$num]['line']} in Function {$this->errors[$num]['function']}. <br/> Error message was: $m </div>";
 		}
-		
+
 		ob_start();
 		debug_print_backtrace();
 		$output .= "<pre>" . ob_get_contents() . "</pre>";
 		ob_end_clean();
 		return $output;
-	
+
 	}
-	
+
 	/**
 	 * method to return a plain text dump of queries for output to a text file
-	 * 
+	 *
 	 * @return string: plain text set of queries
 	 */
 	private function getDebugInfo(){
@@ -372,10 +372,10 @@ HTML;
 		}
 		return $output;
 	}
-	
+
 	/**
 	 *	function to reset the object for a new query
-	 *		
+	 *
 	 */
 	private function flush(){
 		$this->initialQuery = '';
@@ -393,9 +393,9 @@ HTML;
 		$this->errorMessages=array();
 		$this->isError = false;
 		$this->queries = array();
-		
+
 	}
-	
+
 	/**
 	 *	interacts with the rewrite engine to cleanse the result set from a query
 	 *
@@ -407,11 +407,11 @@ HTML;
 			$this->results = $this->_results;
 		}
 	}
-	
-	
+
+
 	/**
 	*	prepares a query (to execute a query)
-	*	
+	*
 	*/
 	private function prepareQuery(){
 		$this->queries[] = "Prepare:\t". $this->preparedQuery;
@@ -425,7 +425,7 @@ HTML;
 				$reason = 0;
 			}
 		} while ($reason == 17);
-		
+
 		if ($reason > 0){
 			$message = "Problem preparing the PDO SQL Statement.  Error was ".$reasons[2];
 			$this->setError(__LINE__, __FUNCTION__, $message);
@@ -433,9 +433,9 @@ HTML;
 		}
 
 		return $this->executeQuery($this->statement);
-		
+
 	}
-	
+
 	/**
 	 *	executes a query (prepared by prepareQuery)
 	 *
@@ -473,11 +473,11 @@ HTML;
 			$this->setError(__LINE__, __FUNCTION__, $message);
 			return FALSE;
 		}else {
-			//grab the results in an associative array 
+			//grab the results in an associative array
 			//CONSIDER CHANGING TO FETCH OBJECTS AND THEN REWRITE THE POST PROCESSING FUNCTION
 			$this->_results = $statement->fetchAll(PDO::FETCH_ASSOC);
 		}
-		
+
 		//generate the results that $wpdb will want to see
 		switch ($this->queryType){
 			case "insert":
@@ -486,7 +486,7 @@ HTML;
 				$this->lastInsertID = $this->pdo->lastInsertId();
 				$this->affectedRows = $statement->rowCount();
 				$this->returnValue = $this->affectedRows;
-				
+
 			break;
 			case "select":
 			case "show":
@@ -494,7 +494,7 @@ HTML;
 			case "foundrows":
 				$this->numRows = count($this->_results);
 				$this->returnValue = $this->numRows;
-				
+
 			break;
 			case "delete":
 				$this->affectedRows = $statement->rowCount();
@@ -511,21 +511,21 @@ HTML;
 			break;
 		}
 	}
-	
+
 	/**
 	*	releases all string variables and replaces with placeholders
 	*
 	*	note that this only handles mysql variables that are enquoted.
-	*	so variables passed as integers are not given this protection.  
+	*	so variables passed as integers are not given this protection.
 	*	this _should_ always be OK ...
-	*	interacts with replaceVariablesWithPlaceHolders	
+	*	interacts with replaceVariablesWithPlaceHolders
 	*/
 	private function extractVariables(){
 		if ($this->queryType == 'create'){
 			$this->preparedQuery = $this->rewrittenQuery;
 			return;
 		}
-		
+
 		//long queries can really kill this
 		$pattern = '/(?<!\\\\)([\'"])(.*?)(?<!\\\\)\\1/imsx';
 		$_limit = $limit = ini_get('pcre.backtrack_limit');
@@ -536,24 +536,24 @@ HTML;
 				break; //no point in continuing execution, would get into a loop
 			} else {
 				ini_set('pcre.backtrack_limit', $limit);
-				$query = preg_replace_callback($pattern, array($this,'replaceVariablesWithPlaceHolders'), $this->rewrittenQuery);	
+				$query = preg_replace_callback($pattern, array($this,'replaceVariablesWithPlaceHolders'), $this->rewrittenQuery);
 			}
 			$limit = $limit * 10;
 		} while (empty($query));
-		
+
 		//reset the pcre.backtrack_limit
 		ini_set('pcre.backtrack_limit', $_limit);
 		$this->queries[]= "With Placeholders: $query ";
 		$this->preparedQuery = $query;
 	}
-	
+
 	/**
 	 *	substitutes enquoted variables (i.e. strings and dates and blobs etc) with placeholders
 	 *
 	 *	this callback function assumes that variables are escaped for use in
-	 *	mysql, i.e. using an inline method (plugin) or a call to $wpdb.  
+	 *	mysql, i.e. using an inline method (plugin) or a call to $wpdb.
 	 *	it unescapes them, does a bit of cleansing and then spits
-	 *	back out a clean variable into a holding array and returns 
+	 *	back out a clean variable into a holding array and returns
 	 *	a SQL placeholder for use in the prepared query.
 	 *
 	 *	@param $matches array [an array provided by the calling function]
@@ -562,10 +562,10 @@ HTML;
 	private function replaceVariablesWithPlaceHolders($matches){
 		//remove the wordpress escaping mechanism
 		$param = stripslashes($matches[0]);
-		
+
 		//remove trailing spaces
-		$param = trim($param); 
-		
+		$param = trim($param);
+
 		//remove the quotes at the end and the beginning
 		if (in_array($param{strlen($param)-1}, array("'",'"'))){
 			$param = substr($param,0,-1) ;//end
@@ -577,10 +577,10 @@ HTML;
 		//return the placeholder
 		return ' ? ';
 	}
-	
+
 	/**
 	 *	takes the query and determines the query type
-	 *	
+	 *
 	 *	we divide up the types of query as follows:
 	 *	-select
 	 *	-select found_rows
@@ -596,7 +596,7 @@ HTML;
 	 */
 	public function determineQueryType($query){
 		$result = preg_match('/^\\s*(select\\s*found_rows|select|insert|update|replace|delete|alter|create|drop|show|describe|truncate|optimize)/i', $query, $match);
-		
+
 		if (!$result){
 			$bailoutString = <<<HTML
 <h1>Unknown query type</h1>
@@ -612,7 +612,7 @@ HTML;
 				if (stristr($this->queryType, 'insert')){
 					$pattern = '/(INSERT.*VALUES\s*)(\(.*\))/imsx';
 					preg_match($pattern, $query, $match);
-					$explodedParts = explode ('),', $match[2]);
+					$explodedParts = $this->parseMultipleInserts($match[2]);
 					$count = count($explodedParts);
 					if ($count > 1){
 						$this->queryType = 'multiInsert';
@@ -622,10 +622,36 @@ HTML;
 			}
 		}
 	}
-	
+
+	private function parseMultipleInserts($values){
+	    $tokens = preg_split("/(''|'|\),)/",$values,-1,PREG_SPLIT_DELIM_CAPTURE);
+	    $explodedParts = array();
+	    $part = '';
+	    $literal = FALSE;
+	    foreach ($tokens as $tok) {
+	      $part = $part.$tok;
+	      switch ($tok) {
+	        case "),":
+	          if (!$literal) {
+	            $explodedParts[] = $part;
+	            $part = '';
+	          }
+	          break;
+	        case "'":
+	          if ($literal) { $literal = FALSE; }
+	          else { $literal = TRUE; }
+	          break;
+	      }
+	    }
+	    if (!empty($part)) {
+	      $explodedParts[] = $part;
+	    }
+	    return $explodedParts;
+	  }
+
 	/**
 	 *	method for adding data to the error array
-	 *	
+	 *
 	 *	@param string $line	the line of the script that throws the error
 	 *	@param string $function	the name of the function in which the error was thrown
 	 */
@@ -635,7 +661,7 @@ HTML;
 		$this->isError = true;
 		file_put_contents (FQDBDIR .'debug.txt', "Line $line, Function: $function, Message: $message \n", FILE_APPEND);
 	}
-	
+
 	/**
 	*	method that takes the associative array of query results and creates a numeric array of anonymous objects
 	*/
@@ -646,8 +672,8 @@ HTML;
 		} else {
 		foreach($this->results as $row){
 			$_results[] =  new objArray($row);
-		}	
-		}	
+		}
+		}
 		$this->results = $_results;
 	}
 
@@ -656,30 +682,30 @@ HTML;
 /**
  *	class for creating an anonymous object
  */
-class objArray 
-{ 
-    function __construct($data = null,&$node= null) 
-    { 
-        foreach ($data as $key => $value) 
-        { 
-            if ( is_array($value) ) 
-            { 
-                if (!$node) 
-                { 
-                    $node =& $this; 
-                } 
-                    $node->$key = new stdClass();         
-                    self::__construct($value,$node->$key); 
-            } 
-            else 
-            { 
-                if (!$node) 
-                { 
-                    $node =& $this; 
-                } 
-                $node->$key = $value; 
-            } 
-        } 
-    } 
+class objArray
+{
+    function __construct($data = null,&$node= null)
+    {
+        foreach ($data as $key => $value)
+        {
+            if ( is_array($value) )
+            {
+                if (!$node)
+                {
+                    $node =& $this;
+                }
+                    $node->$key = new stdClass();
+                    self::__construct($value,$node->$key);
+            }
+            else
+            {
+                if (!$node)
+                {
+                    $node =& $this;
+                }
+                $node->$key = $value;
+            }
+        }
+    }
 }
 ?>

@@ -4,24 +4,24 @@
  * @version $Id$
  * @author	Justin Adie, rathercurious.net
  */
- 
+
 /**
  *	base class for sql rewriting
  */
 
 class pdo_sqlite_driver{
-	
+
 	//required variables
 	private 	$ifStatements = array();
 	private 	$startingQuery = '';
 	public 		$_query = '';
 	private 	$dateRewrites = array();
-	
-	
+
+
 	/**
 	*	method to rewrite sqlite queries (or emulate mysql functions)
 	*
-	*	
+	*
 	*	@access	public
 	*	@param string $query	the query to be rewritten
 	*/
@@ -54,8 +54,8 @@ class pdo_sqlite_driver{
 				//$this->rewrite_datetime_functions();
 				//$this->rewriteSubstring();
 				//$this->rewrite_date_add();
-				//$this->rewrite_date_sub();
-				//$this->rewriteNowUsage();
+				$this->rewrite_date_sub();
+				$this->rewriteNowUsage();
 				$this->deleteIndexHints();
 				$this->fixdatequoting();
 				//$this->rewrite_md5();
@@ -103,7 +103,7 @@ class pdo_sqlite_driver{
 		}
 		return $this->_query;
 	}
-	
+
 	/**
 	*	method to process results of an unbuffered query
 	*
@@ -113,7 +113,7 @@ class pdo_sqlite_driver{
 	*/
 	public function processResults($array = array()){
 		return $array;
-		$this->_results = $array;		
+		$this->_results = $array;
 		//the If results...
 		foreach($this->ifStatements as $ifStatement){
 			foreach($this->_results as $key=>$row){
@@ -157,7 +157,7 @@ class pdo_sqlite_driver{
 							$operation = (substr($ifStatement['param1_as'], -1, strlen($ifStatement['param2_as'])-1) == substr($ifStatement['param2_as'],0, strlen($ifStatement['param2_as'] -1)));
 						}
 						if (!$l && $r){
-							$operation = (substr($ifStatement['param1_as'], 0, strlen($ifStatement['param2_as'])-1) == substr($ifStatement['param2_as'],1, strlen($ifStatement['param2_as'] -1)));			
+							$operation = (substr($ifStatement['param1_as'], 0, strlen($ifStatement['param2_as'])-1) == substr($ifStatement['param2_as'],1, strlen($ifStatement['param2_as'] -1)));
 						}
 					break;
 				}
@@ -166,9 +166,9 @@ class pdo_sqlite_driver{
 				unset($row[$ifStatement['param2_as']]);
 				$row[$ifStatement['as']] = ($operation) ? $ifStatement['trueval'] : $ifStatement['falseval'];
 				$this->_results[$key] = $row;
-			} //end of foreach $array	
+			} //end of foreach $array
 		} //end of IF processing
-		
+
 		/*
 		//	this code is kept in for future use
 		//	it seems neater to abstract the call to sqlite to a julian date time and then fix in php
@@ -181,10 +181,10 @@ class pdo_sqlite_driver{
 			}
 		}
 		*/
-		
+
 		return $this->_results;
 	}
-	
+
 	/**
 	 *	method to dummy the SHOW TABLES query
 	 */
@@ -192,14 +192,14 @@ class pdo_sqlite_driver{
 		$pattern = '/^\\s*SHOW\\s*TABLES\\s*(LIKE\\s*.*)?/im';
 		$result = preg_match($pattern, $this->_query, $matches);
 		if (!empty($matches[1])){
-			$suffix = ' AND name '.$matches[1];		
+			$suffix = ' AND name '.$matches[1];
 		} else {
 			$suffix = '';
 		}
 		$this->_query = "SELECT name FROM sqlite_master WHERE type = 'table'" . $suffix . ' ORDER BY name DESC';
-		$this->showQuery = true;	
+		$this->showQuery = true;
 	}
-	
+
 	/**
 	*	rewrites date_format() clauses for use in sqlite
 	*
@@ -216,7 +216,7 @@ class pdo_sqlite_driver{
 		$query = preg_replace_callback($pattern, array($this, '_rewrite_date_format'), $this->_query);
 		$this->_query = $query;
 	}
-	
+
 	/**
 	 *	method to rewrite the datetime functions used in mysql and wordpress
 	 */
@@ -225,7 +225,7 @@ class pdo_sqlite_driver{
 		$query = preg_replace_callback($pattern, array($this, '_rewrite_datetime_functions'), $this->_query);
 		$this->_query = $query;
 	}
-	
+
 	/**
 	*	callback function for rewrite_datetime_function
 	*	thanks to Nicolas Schmid for pointing out the +0 fix
@@ -248,7 +248,7 @@ class pdo_sqlite_driver{
 			break;
 		}
 	}
-		
+
 	/**
 	*	method to rewrite the use of the now() function for use in sqlite
 	*
@@ -259,7 +259,7 @@ class pdo_sqlite_driver{
 		$query = $this->istrreplace('CURDATE()', " DATETIME('now') ", $query);
 		$this->_query = $query;
 	}
-	
+
 	/**
 	*	rewrites if statements to retrieve all columns in the query
 	*
@@ -278,7 +278,7 @@ class pdo_sqlite_driver{
 	private function stripBackTicks(){
 		$this->_query = str_replace("`", "", $this->_query);
 	}
-	
+
 	/**
 	*	callback function for handle_if_statements
 	*/
@@ -295,7 +295,7 @@ class pdo_sqlite_driver{
 										'as'=>$matches[6]);
 		return " $matches[1] as $tmp_1, $matches[3] as $tmp_2 ";
 	}
-	
+
 	/**
 	*	callback function for rewrite_date_format
 	*/
@@ -309,7 +309,7 @@ class pdo_sqlite_driver{
 		return " strftime('{$formatString}', '{$param}') ";
 		*/
 	}
-	
+
 	/**
 	*	method to rewrite the char_length function for use in sqlite
 	*/
@@ -317,11 +317,11 @@ class pdo_sqlite_driver{
 		$this->_query = $this->iStrReplace('char_length', 'length', $this->_query);
 		return $query;
 	}
-	
+
 	/**
 	*	function that abstracts a case insensitive search and replace
 	*
-	*	implemented for backward compatibility with pre 5.0 versions of 
+	*	implemented for backward compatibility with pre 5.0 versions of
 	*	php.  not really needed as php4 won't work with this class anyway
 	*
 	*	@param string $search	the needle
@@ -335,7 +335,7 @@ class pdo_sqlite_driver{
 			return preg_replace("/$search/i", $replace, $subject);
 		}
 	}
-	
+
 	/**
 	*	method to emulate the SQL_CALC_FOUND_ROWS placeholder for mysql
 	*
@@ -355,19 +355,19 @@ class pdo_sqlite_driver{
 			//first strip the code
 			$this->_query = $this->istrreplace('SQL_CALC_FOUND_ROWS', ' ', $this->_query);
 			//echo "prepped query for main use = ". $this->_query ."<br/>";
-			
+
 			$unLimitedQuery = preg_replace('/\\bLIMIT\s*.*/imsx', '', $this->_query);
 			$unLimitedQuery = $this->transform2Count($unLimitedQuery);
 			//echo "prepped query for count use is $unLimitedQuery<br/>";
 			$_wpdb = new pdo_db(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST, DB_TYPE);
-			
+
 			$result = $_wpdb->query($unLimitedQuery);
 			$wpdb->dbh->foundRowsResult = $_wpdb->last_result;
 			//echo "number of records stored is $rowcount<br/>";
-			
+
 		}
 	}
-	
+
 	/**
 	*	transforms a select query to a select count(*)
 	*
@@ -379,7 +379,7 @@ class pdo_sqlite_driver{
 		$_query = preg_replace($pattern, 'Select \\1 count(*) from ', $query);
 		return $_query;
 	}
-	
+
 	/**
 	*	rewrites md5 usage
 	*
@@ -392,37 +392,37 @@ class pdo_sqlite_driver{
 		$pattern = "/md5[(][']([^']*)['][)]/i";
 		$this->_query = preg_replace_callback($pattern,array($this, "_rewrite_md5"),$this->_query);
 	}
-	
+
 	/**
 	*	callback function for rewrite_md5()
 	*/
 	private function _rewrite_md5($matches){
 		return "'".md5($matches[1])."'";
 	}
-	
+
 	/**
 	*	rewrites rand() usage for sqlite
 	*/
 	private function rewrite_rand(){
 		$pattern = "/rand\(\)/i";
 		$this->_query = preg_replace($pattern, ' random() ', $this->_query);
-	} 
+	}
 
 	/**
 	*	rewrites the insert ignore phrase for sqlite
 	*/
 	private function rewrite_insert_ignore(){
-		$this->_query = $this->istrreplace('insert ignore', 'insert or ignore ', $this->_query); 
+		$this->_query = $this->istrreplace('insert ignore', 'insert or ignore ', $this->_query);
 	}
 
 	/**
 	*	rewrites the update ignore phrase for sqlite
 	*/
 	private function rewrite_update_ignore(){
-		$this->_query = $this->istrreplace('update ignore', 'update or ignore ', $this->_query); 
+		$this->_query = $this->istrreplace('update ignore', 'update or ignore ', $this->_query);
 	}
-	
-	
+
+
 	/**
 	*	rewrites usage of the date_add function for sqlite
 	*/
@@ -431,7 +431,7 @@ class pdo_sqlite_driver{
 		$pattern = '/\\s*date_add\\s*\(([^,]*),([^\)]*)\)/imsx';
 		$this->_query = preg_replace_callback($pattern, array($this,'_rewrite_date_add'), $this->_query);
 	}
-	
+
 	/**
 	*	callback function for rewrite_date_add()
 	*/
@@ -449,7 +449,7 @@ class pdo_sqlite_driver{
 		//we should be after items 1 and 2
 		return " datetime($date,'$_params[1] $_params[2]') ";
 	}
-	
+
 	/**
 	 *	method to rewrite date_sub
 	 *
@@ -460,7 +460,7 @@ class pdo_sqlite_driver{
 		$pattern = '/\\s*date_sub\\s*\(([^,]*),([^\)]*)\)/imsx';
 		$this->_query = preg_replace_callback($pattern, array($this,'_rewrite_date_sub'), $this->_query);
 	}
-	
+
 	/**
 	*	callback function for rewrite_date_sub()
 	*/
@@ -478,12 +478,12 @@ class pdo_sqlite_driver{
 		//we should be after items 1 and 2
 		return " datetime($date,'-$_params[1] $_params[2]') ";
 	}
-	
+
 	/**
 	*	handles the create query
 	*
 	*	this method invokes a separate class for the query rewrites
-	*	as the create queries are complex to rewrite and I did not 
+	*	as the create queries are complex to rewrite and I did not
 	*	want to clutter up the function namespace where unnecessary to do so
 	*/
 	private function handleCreateQuery(){
@@ -492,21 +492,21 @@ class pdo_sqlite_driver{
 		$this->_query = $q->rewriteQuery($this->_query);
 		$q = NULL;
 	}
-	
+
 	/**
 	*	dummies the alter queries as sqlite does not have a great method for handling them
 	*/
 	private function handleAlterQuery(){
 		$this->_query = "select 1=1";
 	}
-	
+
 	/**
 	*	dummies describe queries
 	*/
 	private function handleDescribeQuery(){
 		$this->_query = "select 1=1";
 	}
-	
+
 	/**
 	*	the new update() method of wp-db makes for some reason insists on adding LIMIT
 	*	to the end of each update query. sqlite does not support these.
@@ -518,7 +518,7 @@ class pdo_sqlite_driver{
 		$pattern = '/\s*LIMIT\s*[0-9]$/i';
 		$this->_query = preg_replace($pattern, '', $this->_query);
 	}
-	
+
 
 	/**
 	 *	rewrites Show usage of the mysql substring function for use with sqlite
@@ -527,46 +527,46 @@ class pdo_sqlite_driver{
 		$pattern = '/\\s*SUBSTRING\\s*\(/i';
 		$this->_query = preg_replace($pattern, ' SUBSTR(', $this->_query);
 	}
-	
+
 	private function handleTruncateQuery(){
 		$pattern = '/truncate table (.*)/im';
 		$this->_query = preg_replace($pattern, 'DELETE FROM $1', $this->_query);
 	}
 	/**
 	 * rewrites use of Optimize queries in mysql for sqlite.
-	 * 
-	 * no granularity is used here.  an optimize table will vacuum the whole database. 
+	 *
+	 * no granularity is used here.  an optimize table will vacuum the whole database.
 	 * probably not a bad thing
 	 * thanks to fnumatic for spotting the function declaration error.
-	 *  
+	 *
 	 */
 	private function rewrite_optimize(){
 		$this->_query ="VACUUM";
 	}
-	
+
 	/**
 	 * function to ensure date inserts are properly formatted for sqlite standards
-	 * 
+	 *
 	 * some wp UI interfaces (notably the post interface) badly composes the day part of the date
 	 * leading to problems in sqlite sort ordering etc.
-	 * 
+	 *
 	 * @return void
 	 */
 	private function rewriteBadlyFormedDates(){
 		$pattern = '/([12]\d{3,}-\d{2}-)(\d )/ims';
 		$this->_query = preg_replace($pattern, '${1}0$2', $this->_query);
 	}
-	
+
 	/**
 	 * function to remove unsupported index hinting from mysql queries
-	 * 
-	 * @return void 
+	 *
+	 * @return void
 	 */
 	private function deleteIndexHints(){
 		$pattern = '/use\s+index\s*\(.*?\)/i';
 		$this->_query = preg_replace($pattern, '', $this->_query);
 	}
-	
+
 	private function rewriteOnDuplicateKeyUpdate(){
 		 $pattern = '/ on duplicate key update .*$/im';
 		 $this->_query = preg_replace($pattern, '', $this->_query);
@@ -574,24 +574,24 @@ class pdo_sqlite_driver{
 		 $pattern = '/^INSERT /im';
 		 $this->_query = preg_replace($pattern, 'INSERT OR REPLACE ', $this->_query);
 	}
-	
-		
+
+
 	/**
 	 * method to fix inconsistent use of quoted, unquoted etc date values in query function
-	 * 
-	 * this is ironic, given the above rewritebadlyformed dates method 
-	 * 
-	 * examples 
+	 *
+	 * this is ironic, given the above rewritebadlyformed dates method
+	 *
+	 * examples
 	 * where month(fieldname)=08 becomes month(fieldname)='8'
 	 * where month(fieldname)='08' becomes month(fieldname)='8'
-	 * 
+	 *
 	 * @return void
 	 */
 	private function fixDateQuoting(){
 		$pattern = '/(month|year|second|day|minute|hour|dayofmonth)\s*\((.*?)\)\s*=\s*["\']?(\d{1,4})[\'"]?\s*/ei';
 		$this->_query = preg_replace($pattern, "'\\1(\\2)=\'' . intval('\\3') . '\' ' ", $this->_query);
 	}
-	
+
 	private function rewriteRegexp(){
 		$pattern = '/\s([^\s]*)\s*regexp\s*(\'.*?\')/im';
 		$this->_query = preg_replace($pattern, ' regexpp(\1, \2)', $this->_query);

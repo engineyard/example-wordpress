@@ -4,7 +4,7 @@
  * @version $Id$
  * @author	Justin Adie, rathercurious.net
  */
- 
+
  /**
   *	this class inherits from wpdb
   *
@@ -51,7 +51,7 @@ class pdo_db extends wpdb {
 	*	@var $engine mixed - holds a reference to the main query engine
 	*	@var $queryType string - holds the type of query, as set by determineQueryType
 	*/
-	
+
 	var $engine;
 	var $queryType;
 
@@ -76,16 +76,16 @@ class pdo_db extends wpdb {
 
 		if ( defined('DB_COLLATE') )
 			$this->collate = DB_COLLATE;
-		
+
 		$this->createDBObject();
-	
+
 		if ($this->dbh->isError) {
 			$this->bail($this->dbh->getErrorMessage());
 		}
-		
+
 	}
-	
-	
+
+
 	/**
 	*	sets the database connection object
 	*
@@ -95,7 +95,7 @@ class pdo_db extends wpdb {
 	*	the supported database types that have PDO drivers and rewrite scripts provided
 	*	no variable is returned but the dbh property is set
 	*/
-	function createDBObject(){	
+	function createDBObject(){
 		$this->dbh = NEW PDO_Engine(array($this->dbType, $this->dbuser, $this->dbpassword, $this->dbname, $this->dbhost));
 		if ($this->dbh === false || $this->dbh->isError){
 			$this->bail($this->dbh->getErrorMessage());
@@ -106,7 +106,7 @@ class pdo_db extends wpdb {
 	 *	method to escape the string for use in mysql databases.
 	 *
 	 *	this is left intact rather than dummying out.  there is a performance hit in doing so
-	 *	but trying to dummy it screws with some other WP functionality 
+	 *	but trying to dummy it screws with some other WP functionality
 	 *	similarly, using mysql_escape_string() (which you would think would be logical) screws things up to.
 	 *	basically does not honour line terminators.
 	 *
@@ -114,11 +114,18 @@ class pdo_db extends wpdb {
 	 *	@return	string	escaped variable
 	 */
 	function escape($string) {
-		return addslashes($string);
-	}
-	
+		 if ( is_array($string) ) {
+			  foreach ($string as &$value) {
+				  $value = sqlite_escape_string($value);
+			  }
+		  	return $string;
+		 } else {
+		  	return sqlite_escape_string($string);
+		 }
+	 }
+
 	/**
-     *	sends a query through the abstraction engine 
+     *	sends a query through the abstraction engine
 	 *
 	 *	this is largely the same as the original query function
 	 *	within wordpress save that it executes via an engine
@@ -128,7 +135,7 @@ class pdo_db extends wpdb {
 	 *	@return integer/bool - depends on the queryType
 	 */
 	function query($query) {
-		
+
 		// filter the query, if filters are available
 		// NOTE: some queries are made before the plugins have been loaded, and thus cannot be filtered with this method
 		if ( function_exists('apply_filters') )
@@ -144,20 +151,20 @@ class pdo_db extends wpdb {
 		// Keep track of the last query for debug..
 		$this->last_query = $query;
 
-		
+
 		if (SAVEQUERIES)
 			$this->timer_start();
-	
+
 		//run the query through the abstraction engine
-		
-		// and this, basically, is where all the heavy lifting is done!  
+
+		// and this, basically, is where all the heavy lifting is done!
 		$this->result = $this->dbh->query($query);
-		
+
 		++$this->num_queries;
 
 		if (SAVEQUERIES)
 			$this->queries[] = array( $query, $this->timer_stop(), $this->get_caller() );
-		
+
 		// If there is an error then take note of it..
 		//	this has been changed to reference the PDO_Engine object which has more
 		//	advanced error handling and reporting
@@ -169,7 +176,7 @@ class pdo_db extends wpdb {
 				$this->print_error($this->dbh->getErrorMessage());
 			}
 		}
-		
+
 		$this->insert_id = $this->dbh->getInsertID();
 		$this->rows_affected = $this->dbh->getAffectedRows();
 		$this->col_info = $this->dbh->getColumns();
@@ -180,7 +187,7 @@ class pdo_db extends wpdb {
 		return $return_val;
 	}
 
-	
+
 	/**
 	 * Checks wether of not the database version is high enough to support the features WordPress uses
 	 * @global $wp_version
@@ -195,7 +202,7 @@ class pdo_db extends wpdb {
 					return new WP_Error('database_version',sprintf(__('<strong>ERROR</strong>: WordPress %s requires MySQL 4.0.0 or higher'), $wp_version));
 				}
 				break;
-			
+
 		}
 	}
 
@@ -226,15 +233,15 @@ class pdo_db extends wpdb {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * stubs out _real escape too
 	 */
-	
+
 	function _real_escape($string) {
-		return addslashes( $string );
+		return addslashes( $this->escape($string ));
 	}
-	
+
 	function has_cap($db_cap){
 		switch ($this->dbType){
 			case 'sqlite':
@@ -252,9 +259,9 @@ class pdo_db extends wpdb {
 			default:
 				return parent::has_cap($db_cap);
 		}
-		
+
 	}
-	
+
 	/**
 	 * Print SQL/DB error.
 	 *
@@ -272,7 +279,7 @@ class pdo_db extends wpdb {
 			$e = $pdo->errorInfo();
 			$str = $e[2];
 		}
-		
+
 		$EZSQL_ERROR[] = array ('query' => $this->last_query, 'error_str' => $str);
 
 		if ( $this->suppress_errors )
