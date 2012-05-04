@@ -68,7 +68,6 @@ class PDO_Engine{
 				//as sqlite is file system database, we need to make sure that permissions
 				//don't bite us in the arse
 				$u = umask(0000);
-				chmod(FQDBDIR, 0777);
 				//	determines whether we are in the installation process.  If so, we
 				//	create the holding directory, protect it from direct access and create the database
 				if (!is_dir(FQDBDIR)){
@@ -80,14 +79,14 @@ class PDO_Engine{
 				}
 				if (!is_writable (FQDBDIR)){
 					umask($u);
-					$wpdb->bail('<h1>Permissions Problem</h1><p>PDO For WordPress needs to be able to write to the folder ' .FQDBDIR ."</p>");
+					//$wpdb->bail('<h1>Permissions Problem</h1><p>PDO For WordPress needs to be able to write to the folder ' .FQDBDIR ."</p>");
 				}
 
 				if (!is_file(FQDBDIR.'/.htaccess')){
 					$fh = fopen(FQDBDIR.'/.htaccess', "w");
 					if (!$fh) {
 						umask($u);
-						$wpdb->bail("<h1>Cannot create htaccess file</h1><p>The installation routine cannot create the htaccess file needed to protect your database</p>");
+						//$wpdb->bail("<h1>Cannot create htaccess file</h1><p>The installation routine cannot create the htaccess file needed to protect your database</p>");
 					}
 					fwrite ($fh, "DENY FROM ALL");
 					fclose ($fh);
