@@ -276,7 +276,7 @@ HTML;
 		}
 		//dump some queries to a text file for testing
 		if (defined('PDO_DEBUG') && PDO_DEBUG === true){
-			file_put_contents(ABSPATH.'wp-content/database/debug.txt', $this->getDebugInfo(), FILE_APPEND);
+			//file_put_contents(ABSPATH.'wp-content/database/debug.txt', $this->getDebugInfo(), FILE_APPEND);
 		}
 	}
 
@@ -659,7 +659,7 @@ HTML;
 		$this->errors[] = array("line"=>$line, "function"=>$function);
 		$this->errorMessages[] = $message;
 		$this->isError = true;
-		file_put_contents (FQDBDIR .'debug.txt', "Line $line, Function: $function, Message: $message \n", FILE_APPEND);
+		//file_put_contents (FQDBDIR .'debug.txt', "Line $line, Function: $function, Message: $message \n", FILE_APPEND);
 	}
 
 	/**
